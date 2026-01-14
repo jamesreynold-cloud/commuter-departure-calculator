@@ -25,6 +25,20 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
+      - name: Wait for deployment (ensure debug option present)
+        env:
+          LIVE_URL: https://commuter-departure-calculator-bm1qo5m2c-james-reynolds-projects.vercel.app
+        run: |
+          for i in {1..30}; do
+            if curl -sS "$LIVE_URL" | grep -q 'Debug (0m)'; then
+              echo "Deployment ready"
+              exit 0
+            fi
+            echo "Waiting for deployment... ($i)"
+            sleep 5
+          done
+          echo "Deployment did not include e2e changes" && exit 1
+
       - name: Run Playwright E2E tests
         env:
           LIVE_URL: https://commuter-departure-calculator-bm1qo5m2c-james-reynolds-projects.vercel.app
