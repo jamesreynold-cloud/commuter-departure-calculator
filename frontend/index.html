@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Commuter Departure App</title>
+  <style>
+    body { font-family: Arial; max-width: 500px; margin: 50px auto; }
+    label { display: block; margin-top: 15px; font-weight: bold; }
+    input, select, button { width: 100%; padding: 8px; margin-top: 5px; }
+    #result { margin-top: 20px; font-weight: bold; color: green; }
+  </style>
+</head>
+<body>
+
+<h2>Commuter Departure Time Calculator</h2>
+
+<label for="route">Route:</label>
+<select id="route">
+  <option value="bus101">Bus 101 - Main St</option>
+  <option value="bus202">Bus 202 - Downtown</option>
+</select>
+
+<label for="arrivalTime">Arrival Time:</label>
+<input type="time" id="arrivalTime">
+
+<label for="buffer">Buffer (minutes):</label>
+<input type="number" id="buffer" value="5">
+
+<button onclick="calculateDeparture()">Calculate Departure</button>
+
+<div id="result"></div>
+<div id="countdown" style="margin-top:10px; font-weight:bold;"></div>
+
+<script>
+
+// Request notification permission on page load
+if ("Notification" in window) {
+  if (Notification.permission !== "granted") {
+    Notification.requestPermission();
+  }
+}
+
+async function calculateDeparture() {
+  const route = document.getElementById("route").value;
+  const arrivalTime = document.getElementById("arrivalTime").value;
+  const buffer = parseInt(document.getElementById("buffer").value, 10);
+
+
+
+  if (!arrivalTime) {
+    alert("Please enter an arrival time.");
+    return;
+  }
+
+  try {
+    // Call the serverless API at a relative path so it works when deployed
+    const response = await fetch("/api/calculate-departure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ route, arrivalTime, buffer })
+    });
+
+    const data = await response.json();
+
+    if (data.error) {
+      document.getElementById("result").innerText = data.error;
+      return;
+    }
+
+   document.getElementById("result").innerText =
+  `You should leave at ${data.departureTime}.
+   We’ll notify you so you don’t have to keep checking.`;
+
+    startCountdown(data.departureTime);
+    scheduleNotification(data.departureTime);
+
+  } catch (err) {
+    document.getElementById("result").innerText = "Error connecting to API.";
+  }
+}
+
+function scheduleNotification(departureTime) {
+  if (Notification.permission !== "granted") {
+    alert("Notifications are not enabled.");
+    return;
+  }
+
+  const now = new Date();
+  const [hours, minutes] = departureTime.split(":").map(Number);
+
+  const departureDate = new Date();
+  departureDate.setHours(hours, minutes, 0, 0);
+
+  // If departure time already passed today, stop
+  if (departureDate <= now) {
+    alert("Departure time has already passed.");
+    return;
+  }
+
+  const delay = departureDate - now;
+
+  setTimeout(() => {
+    new Notification("Time to Leave 🚍", {
+      body: "Leave now to arrive on time.",
+    });
+  }, delay);
+}
+
+let countdownInterval;
+
+function startCountdown(departureTime) {
+  clearInterval(countdownInterval);
+
+  countdownInterval = setInterval(() => {
+    const now = new Date();
+    const [h, m] = departureTime.split(":").map(Number);
+
+    const target = new Date();
+    target.setHours(h, m, 0, 0);
+
+    const diff = target - now;
+
+    if (diff <= 0) {
+      document.getElementById("countdown").innerText = "🚍 Time to leave!";
+      clearInterval(countdownInterval);
+      return;
+    }
+
+    const mins = Math.floor(diff / 60000);
+    const secs = Math.floor((diff % 60000) / 1000);
+
+    document.getElementById("countdown").innerText =
+      `Leaving in ${mins}m ${secs}s`;
+  }, 1000);
+}
+
+</script>
+
+</body>
+</html>

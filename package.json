@@ -1,0 +1,16 @@
+{
+  "name": "commuter-departure-calculator",
+  "version": "1.0.0",
+  "description": "MVP: Commuter Departure Time Calculator (frontend + serverless API)",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "start": "node backend/server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}
