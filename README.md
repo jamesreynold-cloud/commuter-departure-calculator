@@ -1,5 +1,7 @@
 # Commuter Departure Calculator
 
+![CI](https://github.com/jamesreynold-cloud/commuter-departure-calculator/actions/workflows/ci.yml/badge.svg)
+
 MVP: small frontend + serverless API that calculates when a commuter should leave to arrive at a destination on time.
 
 Features
