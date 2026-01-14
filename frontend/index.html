@@ -5,8 +5,12 @@
   <meta charset="UTF-8">
   <title>Commuter Departure App</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23007BFF' width='180' height='180' rx='40'/><text x='50%' y='50%' font-size='80' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>🚍</text></svg>">
   <meta name="description" content="Small app to calculate what time you should leave to arrive on time">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#007BFF">
+  <meta name="mobile-web-app-capable" content="yes">
 </head>
 <body>
 
@@ -132,6 +136,15 @@ function startCountdown(departureTime) {
     document.getElementById("countdown").innerText =
       `Leaving in ${mins}m ${secs}s`;
   }, 1000);
+}
+
+// Register service worker for PWA support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    console.log('✅ Service Worker registered:', reg);
+  }).catch((err) => {
+    console.log('❌ Service Worker registration failed:', err);
+  });
 }
 
 </script>
