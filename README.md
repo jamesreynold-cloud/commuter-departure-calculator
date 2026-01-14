@@ -29,4 +29,11 @@ curl -sS -X POST https://commuter-departure-calculator-bm1qo5m2c-james-reynolds-
   -d '{"route":"bus101","arrivalTime":"09:00","buffer":10}'
 ```
 
+Run E2E tests locally
+1. Install dependencies: `npm ci`
+2. Install Playwright browsers: `npx playwright install`
+3. Run tests: `npm run test:e2e` (set `LIVE_URL` if you want to test the deployed site)
+
+CI: GitHub Actions runs E2E automatically on push to `main` using the live `LIVE_URL`.
+
 If you want me to finish the Vercel import and deploy for you, authorize me (I can guide you through the web flow).
