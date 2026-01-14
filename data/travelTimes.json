@@ -1,5 +1,6 @@
 {
   "bus101": 20,
   "bus202": 35,
-  "trainA": 25
+  "trainA": 25,
+  "debug": 0
 }
