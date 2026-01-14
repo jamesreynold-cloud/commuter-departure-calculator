@@ -3,32 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <title>Commuter Departure App</title>
-  <style>
-    body { font-family: Arial; max-width: 500px; margin: 50px auto; }
-    label { display: block; margin-top: 15px; font-weight: bold; }
-    input, select, button { width: 100%; padding: 8px; margin-top: 5px; }
-    #result { margin-top: 20px; font-weight: bold; color: green; }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="Small app to calculate what time you should leave to arrive on time">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
 </head>
 <body>
 
 <h2>Commuter Departure Time Calculator</h2>
 
 <label for="route">Route:</label>
-<select id="route">
-  <option value="bus101">Bus 101 - Main St</option>
-  <option value="bus202">Bus 202 - Downtown</option>
+<select id="route" aria-label="Route">
+  <option value="bus101">Bus 101 - Main St (20m)</option>
+  <option value="bus202">Bus 202 - Downtown (35m)</option>
+  <option value="trainA">Train A - Express (25m)</option>
 </select>
 
 <label for="arrivalTime">Arrival Time:</label>
-<input type="time" id="arrivalTime">
+<input type="time" id="arrivalTime" aria-required="true">
 
 <label for="buffer">Buffer (minutes):</label>
-<input type="number" id="buffer" value="5">
+<input type="number" id="buffer" value="10" min="0" aria-label="Buffer minutes">
 
-<button onclick="calculateDeparture()">Calculate Departure</button>
+<button class="full" onclick="calculateDeparture()">Calculate Departure</button>
 
-<div id="result"></div>
+<div id="result" role="status" aria-live="polite"></div>
 <div id="countdown" style="margin-top:10px; font-weight:bold;"></div>
 
 <script>
@@ -48,7 +46,7 @@ async function calculateDeparture() {
 
 
   if (!arrivalTime) {
-    alert("Please enter an arrival time.");
+    document.getElementById('result').innerText = 'Please enter an arrival time.';
     return;
   }
 

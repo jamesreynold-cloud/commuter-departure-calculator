@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Smoke test production API (optional)
+        env:
+          LIVE_URL: https://commuter-departure-calculator-bm1qo5m2c-james-reynolds-projects.vercel.app
+        run: |
+          if [ -n "$LIVE_URL" ]; then
+            echo "Testing $LIVE_URL/api/calculate-departure"
+            curl -sS -X POST "$LIVE_URL/api/calculate-departure" -H "Content-Type: application/json" -d '{"route":"bus101","arrivalTime":"09:00","buffer":10}' -o resp.json || exit 1
+            cat resp.json
+            jq -e '.departureTime' resp.json || (echo "No departureTime in response" && exit 1)
+          else
+            echo "LIVE_URL not set — skipping smoke test"
+          fi
