@@ -32,17 +32,58 @@
 
 <button class="full" onclick="calculateDeparture()">Calculate Departure</button>
 
+<button id="notifBtn" class="notification-btn" onclick="enableNotifications()" style="background-color: #ffc107; margin-top: 15px; display: none;">🔔 Enable Notifications</button>
+<div id="notifStatus" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+
 <div id="result" role="status" aria-live="polite"></div>
 <div id="countdown" style="margin-top:10px; font-weight:bold;"></div>
 
 <script>
 
-// Request notification permission on page load
-if ("Notification" in window) {
-  if (Notification.permission !== "granted") {
-    Notification.requestPermission();
+// Check and display notification status on page load
+function updateNotificationStatus() {
+  const notifBtn = document.getElementById('notifBtn');
+  const notifStatus = document.getElementById('notifStatus');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  
+  if ("Notification" in window) {
+    if (Notification.permission === "granted") {
+      notifStatus.innerText = "✅ Notifications are enabled!";
+      notifStatus.style.color = "green";
+      notifBtn.style.display = "none";
+    } else if (Notification.permission === "denied") {
+      notifStatus.innerText = isIOS 
+        ? "⚠️ iOS doesn't fully support notifications for PWAs. Consider using reminders or alarms instead." 
+        : "❌ Notifications are blocked. Enable in your browser settings.";
+      notifStatus.style.color = "#d9534f";
+      notifBtn.style.display = isIOS ? "none" : "block";
+    } else {
+      notifStatus.innerText = "🔔 Click the button below to enable notifications";
+      notifStatus.style.color = "#555";
+      notifBtn.style.display = "block";
+    }
+  } else {
+    notifStatus.innerText = "⚠️ Your browser doesn't support notifications.";
+    notifBtn.style.display = "none";
   }
 }
+
+// Enable notifications with user interaction
+async function enableNotifications() {
+  if ("Notification" in window) {
+    const permission = await Notification.requestPermission();
+    updateNotificationStatus();
+    if (permission === "granted") {
+      new Notification("Notifications Enabled!", {
+        body: "You'll now get alerts when it's time to leave."
+      });
+    }
+  }
+}
+
+// Update status on page load
+window.addEventListener('load', updateNotificationStatus);
+window.addEventListener('focus', updateNotificationStatus); // Update when app comes to foreground
 
 async function calculateDeparture() {
   const route = document.getElementById("route").value;
