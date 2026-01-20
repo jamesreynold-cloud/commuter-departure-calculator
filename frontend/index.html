@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- debug option included for e2e tests -->
   <meta charset="UTF-8">
   <title>Commuter Departure App</title>
   <link rel="stylesheet" href="style.css">
@@ -11,8 +10,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#007BFF">
   <meta name="mobile-web-app-capable" content="yes">
+  <style>
+    .dark-toggle { position: fixed; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; }
+    .error { color: #dc2626; font-weight: 600; margin-top: 8px; }
+    .success { color: #059669; font-weight: 600; }
+    .info { color: #0284c7; font-size: 13px; margin-top: 6px; }
+  </style>
 </head>
 <body>
+
+<button class="dark-toggle" id="themeToggle" title="Toggle dark mode">🌙</button>
 
 <h2>Commuter Departure Time Calculator</h2>
 
@@ -32,13 +39,40 @@
 
 <button class="full" onclick="calculateDeparture()">Calculate Departure</button>
 
-<button id="notifBtn" class="notification-btn" onclick="enableNotifications()" style="background-color: #ffc107; margin-top: 15px; display: none;">🔔 Enable Notifications</button>
+<button id="notifBtn" class="notification-btn" onclick="enableNotifications()" style="background-color: #ffc107; margin-top: 15px; display: none; color: #000;">🔔 Enable Notifications</button>
 <div id="notifStatus" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
 
 <div id="result" role="status" aria-live="polite"></div>
 <div id="countdown" style="margin-top:10px; font-weight:bold;"></div>
 
 <script>
+
+// Dark mode toggle with localStorage persistence
+function initDarkMode() {
+  const toggle = document.getElementById('themeToggle');
+  const savedTheme = localStorage.getItem('theme') || 'auto';
+  
+  function applyTheme(theme) {
+    if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.style.colorScheme = 'dark';
+      toggle.textContent = '☀️';
+    } else {
+      document.documentElement.style.colorScheme = 'light';
+      toggle.textContent = '🌙';
+    }
+    localStorage.setItem('theme', theme === 'auto' ? 'auto' : theme);
+  }
+  
+  toggle.addEventListener('click', () => {
+    const current = localStorage.getItem('theme') || 'auto';
+    const next = current === 'auto' ? 'light' : (current === 'light' ? 'dark' : 'auto');
+    applyTheme(next);
+  });
+  
+  applyTheme(savedTheme);
+}
+
+initDarkMode();
 
 // Check and display notification status on page load
 function updateNotificationStatus() {
@@ -48,22 +82,19 @@ function updateNotificationStatus() {
   
   if ("Notification" in window) {
     if (Notification.permission === "granted") {
-      notifStatus.innerText = "✅ Notifications are enabled!";
-      notifStatus.style.color = "green";
+      notifStatus.innerHTML = '<span class="success">✅ Notifications enabled!</span>';
       notifBtn.style.display = "none";
     } else if (Notification.permission === "denied") {
-      notifStatus.innerText = isIOS 
-        ? "⚠️ iOS doesn't fully support notifications for PWAs. Consider using reminders or alarms instead." 
-        : "❌ Notifications are blocked. Enable in your browser settings.";
-      notifStatus.style.color = "#d9534f";
+      notifStatus.innerHTML = `<span class="error">${isIOS 
+        ? "⚠️ iOS PWA notifications not fully supported. Use native reminders instead." 
+        : "❌ Notifications blocked. Enable in browser settings."}</span>`;
       notifBtn.style.display = isIOS ? "none" : "block";
     } else {
-      notifStatus.innerText = "🔔 Click the button below to enable notifications";
-      notifStatus.style.color = "#555";
+      notifStatus.innerHTML = '<span class="info">🔔 Tap the button below to enable notifications</span>';
       notifBtn.style.display = "block";
     }
   } else {
-    notifStatus.innerText = "⚠️ Your browser doesn't support notifications.";
+    notifStatus.innerHTML = '<span class="error">⚠️ Your browser doesn\'t support notifications.</span>';
     notifBtn.style.display = "none";
   }
 }
@@ -71,62 +102,88 @@ function updateNotificationStatus() {
 // Enable notifications with user interaction
 async function enableNotifications() {
   if ("Notification" in window) {
-    const permission = await Notification.requestPermission();
-    updateNotificationStatus();
-    if (permission === "granted") {
-      new Notification("Notifications Enabled!", {
-        body: "You'll now get alerts when it's time to leave."
-      });
+    try {
+      const permission = await Notification.requestPermission();
+      updateNotificationStatus();
+      if (permission === "granted") {
+        new Notification("✅ Notifications Ready!", {
+          body: "You'll get an alert when it's time to leave.",
+          tag: "notification-test"
+        });
+      }
+    } catch (err) {
+      console.error("Notification error:", err);
+      document.getElementById('notifStatus').innerHTML = '<span class="error">❌ Could not enable notifications. Please try again.</span>';
     }
   }
 }
 
-// Update status on page load
+// Update status on page load and when app comes to foreground
 window.addEventListener('load', updateNotificationStatus);
-window.addEventListener('focus', updateNotificationStatus); // Update when app comes to foreground
+window.addEventListener('focus', updateNotificationStatus);
 
+// Main calculation function with improved error handling
 async function calculateDeparture() {
   const route = document.getElementById("route").value;
   const arrivalTime = document.getElementById("arrivalTime").value;
   const buffer = parseInt(document.getElementById("buffer").value, 10);
+  const resultDiv = document.getElementById("result");
 
-
-
+  // Validate input
   if (!arrivalTime) {
-    document.getElementById('result').innerText = 'Please enter an arrival time.';
+    resultDiv.innerHTML = '<span class="error">❌ Please enter an arrival time.</span>';
+    return;
+  }
+
+  if (isNaN(buffer) || buffer < 0) {
+    resultDiv.innerHTML = '<span class="error">❌ Buffer must be a positive number.</span>';
+    return;
+  }
+
+  // Parse arrival time to check if it's valid
+  const [arrivalHours, arrivalMins] = arrivalTime.split(":").map(Number);
+  const arrivalToday = new Date();
+  arrivalToday.setHours(arrivalHours, arrivalMins, 0, 0);
+  
+  if (arrivalToday < new Date()) {
+    resultDiv.innerHTML = '<span class="error">❌ Arrival time has already passed today. Please enter a future time.</span>';
     return;
   }
 
   try {
-    // Call the serverless API at a relative path so it works when deployed
+    resultDiv.innerHTML = '<span class="info">⏳ Calculating...</span>';
+    
     const response = await fetch("/api/calculate-departure", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ route, arrivalTime, buffer })
     });
 
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
     const data = await response.json();
 
     if (data.error) {
-      document.getElementById("result").innerText = data.error;
+      resultDiv.innerHTML = `<span class="error">❌ ${data.error}</span>`;
       return;
     }
 
-   document.getElementById("result").innerText =
-  `You should leave at ${data.departureTime}.
-   We’ll notify you so you don’t have to keep checking.`;
+    resultDiv.innerHTML = `<span class="success">✅ You should leave at <strong>${data.departureTime}</strong></span><div class="info">Travel time: ${data.travelTime}m + ${buffer}m buffer = ${data.travelTime + buffer}m total</div>`;
 
     startCountdown(data.departureTime);
     scheduleNotification(data.departureTime);
 
   } catch (err) {
-    document.getElementById("result").innerText = "Error connecting to API.";
+    console.error("API Error:", err);
+    resultDiv.innerHTML = '<span class="error">❌ Could not connect to API. Check your internet and try again.</span>';
   }
 }
 
 function scheduleNotification(departureTime) {
   if (Notification.permission !== "granted") {
-    alert("Notifications are not enabled.");
+    document.getElementById("result").innerHTML += '<div class="info" style="margin-top: 8px;">💡 Enable notifications to get an alert when it\'s time to leave.</div>';
     return;
   }
 
@@ -138,15 +195,17 @@ function scheduleNotification(departureTime) {
 
   // If departure time already passed today, stop
   if (departureDate <= now) {
-    alert("Departure time has already passed.");
+    document.getElementById("result").innerHTML += '<div class="error" style="margin-top: 8px;">⚠️ Departure time has already passed.</div>';
     return;
   }
 
   const delay = departureDate - now;
 
   setTimeout(() => {
-    new Notification("Time to Leave 🚍", {
-      body: "Leave now to arrive on time.",
+    new Notification("⏰ Time to Leave!", {
+      body: `Leave now to arrive at ${departureTime}. Safe travels! 🚍`,
+      tag: "departure-time",
+      requireInteraction: true
     });
   }, delay);
 }
@@ -166,7 +225,7 @@ function startCountdown(departureTime) {
     const diff = target - now;
 
     if (diff <= 0) {
-      document.getElementById("countdown").innerText = "🚍 Time to leave!";
+      document.getElementById("countdown").innerHTML = '<span class="success">🚍 Time to leave!</span>';
       clearInterval(countdownInterval);
       return;
     }
@@ -174,17 +233,16 @@ function startCountdown(departureTime) {
     const mins = Math.floor(diff / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
 
-    document.getElementById("countdown").innerText =
-      `Leaving in ${mins}m ${secs}s`;
+    document.getElementById("countdown").innerText = `Leaving in ${mins}m ${secs}s`;
   }, 1000);
 }
 
 // Register service worker for PWA support
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').then((reg) => {
-    console.log('✅ Service Worker registered:', reg);
+    console.log('✅ Service Worker registered');
   }).catch((err) => {
-    console.log('❌ Service Worker registration failed:', err);
+    console.warn('⚠️ Service Worker registration failed:', err);
   });
 }
 

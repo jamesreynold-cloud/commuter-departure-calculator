@@ -2,6 +2,11 @@
 :root{
   --bg:#f7fafc;--card:#ffffff;--muted:#6b7280;--accent:#0ea5a4;--text:#0f172a;--button:#0f766e;
 }
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:#0f172a;--card:#1e293b;--muted:#94a3b8;--accent:#06b6d4;--text:#f1f5f9;--button:#0f766e;
+  }
+}
 *{box-sizing:border-box}
 body{font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:24px;}
 .container{max-width:720px;margin:0 auto}
