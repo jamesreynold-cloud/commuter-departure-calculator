@@ -156,10 +156,13 @@ async function calculateDeparture() {
     const response = await fetch("/api/calculate-departure", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ route, arrivalTime, buffer })
+      body: JSON.stringify({ route, arrivalTime, buffer }),
+      credentials: "same-origin"
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API Error ${response.status}:`, errorText);
       throw new Error(`Server error: ${response.status}`);
     }
 
@@ -176,8 +179,8 @@ async function calculateDeparture() {
     scheduleNotification(data.departureTime);
 
   } catch (err) {
-    console.error("API Error:", err);
-    resultDiv.innerHTML = '<span class="error">❌ Could not connect to API. Check your internet and try again.</span>';
+    console.error("API Error Details:", err.message, err);
+    resultDiv.innerHTML = `<span class="error">❌ Error: ${err.message || 'Could not connect to API'}. Check your internet connection and try again.</span>`;
   }
 }
 
