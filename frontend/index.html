@@ -179,8 +179,10 @@ async function calculateDeparture() {
     scheduleNotification(data.departureTime);
 
   } catch (err) {
-    console.error("API Error Details:", err.message, err);
-    resultDiv.innerHTML = `<span class="error">❌ Error: ${err.message || 'Could not connect to API'}. Check your internet connection and try again.</span>`;
+    console.error("API Error Details:", err.message, err.stack);
+    console.error("Full Error:", err);
+    const userMsg = err.message || 'Could not connect to API. Try checking if the page is still loading.';
+    resultDiv.innerHTML = `<span class="error">❌ ${userMsg}</span>`;
   }
 }
 
