@@ -1,5 +1,10 @@
-// Serverless API for Vercel / Netlify-compatible environments
-const travelTimes = require('../data/travelTimes.json');
+// Serverless API for Vercel
+const travelTimes = {
+  "bus101": 20,
+  "bus202": 35,
+  "trainA": 25,
+  "debug": 0
+};
 
 function calculateDeparture(arrivalTime, travelTime, buffer) {
   const [hour, minute] = arrivalTime.split(':').map(Number);
@@ -14,32 +19,48 @@ function calculateDeparture(arrivalTime, travelTime, buffer) {
   return `${String(leaveHour).padStart(2, '0')}:${String(leaveMinute).padStart(2,'0')}`;
 }
 
-module.exports = async function (req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+export default async function handler(req, res) {
+  // CORS headers - MUST be first
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token,X-Requested-With,Accept,Accept-Version,Content-Length,Content-MD5,Content-Type,Date,X-Api-Version');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // Handle preflight requests
+  // Handle preflight
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Only POST allowed' });
+    return;
   }
 
   try {
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Only POST supported' });
-
     const { route, arrivalTime, buffer = 10 } = req.body || {};
-    if (!route || !arrivalTime) return res.status(400).json({ error: 'Missing route or arrivalTime' });
+    
+    if (!route || !arrivalTime) {
+      res.status(400).json({ error: 'Missing route or arrivalTime' });
+      return;
+    }
 
     const travelTime = travelTimes[route];
-    if (travelTime === undefined) return res.status(400).json({ error: 'Unknown route' });
+    if (travelTime === undefined) {
+      res.status(400).json({ error: 'Unknown route' });
+      return;
+    }
 
     const departureTime = calculateDeparture(arrivalTime, travelTime, Number(buffer));
-
-    return res.json({ route, arrivalTime, buffer: Number(buffer), departureTime, travelTime });
+    
+    res.status(200).json({ 
+      route, 
+      arrivalTime, 
+      buffer: Number(buffer), 
+      departureTime, 
+      travelTime 
+    });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('API Error:', err);
+    res.status(500).json({ error: 'Server error: ' + err.message });
   }
-};
+}
