@@ -15,8 +15,19 @@ function calculateDeparture(arrivalTime, travelTime, buffer) {
 }
 
 module.exports = async function (req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token,X-Requested-With,Accept,Accept-Version,Content-Length,Content-MD5,Content-Type,Date,X-Api-Version');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
-    if (req.method !== 'POST') return res.status(405).send({ error: 'Only POST supported' });
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Only POST supported' });
 
     const { route, arrivalTime, buffer = 10 } = req.body || {};
     if (!route || !arrivalTime) return res.status(400).json({ error: 'Missing route or arrivalTime' });
