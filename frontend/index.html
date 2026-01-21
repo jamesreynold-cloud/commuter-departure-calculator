@@ -21,29 +21,44 @@
 
 <button class="dark-toggle" id="themeToggle" title="Toggle dark mode">🌙</button>
 
-<h2>Commuter Departure Time Calculator</h2>
+<div class="container">
+  <header>
+    <h2>🚍 Commuter Departure Calculator</h2>
+    <p class="subtitle">Never be late again! Calculate when to leave.</p>
+  </header>
 
-<label for="route">Route:</label>
-<select id="route" aria-label="Route">
-  <option value="bus101">Bus 101 - Main St (20m)</option>
-  <option value="bus202">Bus 202 - Downtown (35m)</option>
-  <option value="trainA">Train A - Express (25m)</option>
-  <option value="debug">Debug (0m)</option>
-</select>
+  <div class="card">
+    <div class="form-group">
+      <label for="route"><span class="icon-label">🛤️</span> Your Route</label>
+      <select id="route" aria-label="Route">
+        <option value="bus101">Bus 101 - Main St (20m)</option>
+        <option value="bus202">Bus 202 - Downtown (35m)</option>
+        <option value="trainA">Train A - Express (25m)</option>
+        <option value="debug">Debug (0m)</option>
+      </select>
+    </div>
 
-<label for="arrivalTime">Arrival Time:</label>
-<input type="time" id="arrivalTime" aria-required="true">
+    <div class="form-group">
+      <label for="arrivalTime"><span class="icon-label">⏰</span> When Must You Arrive?</label>
+      <input type="time" id="arrivalTime" aria-required="true">
+    </div>
 
-<label for="buffer">Buffer (minutes):</label>
-<input type="number" id="buffer" value="10" min="0" aria-label="Buffer minutes">
+    <div class="form-group">
+      <label for="buffer"><span class="icon-label">⏳</span> Extra Buffer (minutes)</label>
+      <input type="number" id="buffer" value="10" min="0" aria-label="Buffer minutes">
+    </div>
 
-<button class="full" onclick="calculateDeparture()">Calculate Departure</button>
+    <div class="button-group">
+      <button class="btn-primary" onclick="calculateDeparture()">📍 Calculate Departure</button>
+    </div>
 
-<button id="notifBtn" class="notification-btn" onclick="enableNotifications()" style="background-color: #ffc107; margin-top: 15px; display: none; color: #000;">🔔 Enable Notifications</button>
-<div id="notifStatus" style="margin-top: 10px; font-size: 12px; color: #666;"></div>
+    <button id="notifBtn" class="btn-notif" onclick="enableNotifications()" style="display: none;">🔔 Enable Notifications</button>
+    <div id="notifStatus" class="notification-status"></div>
 
-<div id="result" role="status" aria-live="polite"></div>
-<div id="countdown" style="margin-top:10px; font-weight:bold;"></div>
+    <div id="result" role="status" aria-live="polite"></div>
+    <div id="countdown"></div>
+  </div>
+</div>
 
 <script>
 
@@ -131,12 +146,12 @@ async function calculateDeparture() {
 
   // Validate input
   if (!arrivalTime) {
-    resultDiv.innerHTML = '<span class="error">❌ Please enter an arrival time.</span>';
+    resultDiv.innerHTML = '<div class="result-container"><div class="result-text error">❌ Please enter an arrival time.</div></div>';
     return;
   }
 
   if (isNaN(buffer) || buffer < 0) {
-    resultDiv.innerHTML = '<span class="error">❌ Buffer must be a positive number.</span>';
+    resultDiv.innerHTML = '<div class="result-container"><div class="result-text error">❌ Buffer must be a positive number.</div></div>';
     return;
   }
 
@@ -146,12 +161,12 @@ async function calculateDeparture() {
   arrivalToday.setHours(arrivalHours, arrivalMins, 0, 0);
   
   if (arrivalToday < new Date()) {
-    resultDiv.innerHTML = '<span class="error">❌ Arrival time has already passed today. Please enter a future time.</span>';
+    resultDiv.innerHTML = '<div class="result-container"><div class="result-text error">❌ Arrival time has already passed today. Please enter a future time.</div></div>';
     return;
   }
 
   try {
-    resultDiv.innerHTML = '<span class="info">⏳ Calculating...</span>';
+    resultDiv.innerHTML = '<div class="result-container"><div class="result-text info">⏳ Calculating...</div></div>';
     
     const response = await fetch("/api/calculate-departure", {
       method: "POST",
@@ -169,11 +184,11 @@ async function calculateDeparture() {
     const data = await response.json();
 
     if (data.error) {
-      resultDiv.innerHTML = `<span class="error">❌ ${data.error}</span>`;
+      resultDiv.innerHTML = `<div class="result-container"><div class="result-text error">❌ ${data.error}</div></div>`;
       return;
     }
 
-    resultDiv.innerHTML = `<span class="success">✅ You should leave at <strong>${data.departureTime}</strong></span><div class="info">Travel time: ${data.travelTime}m + ${buffer}m buffer = ${data.travelTime + buffer}m total</div>`;
+    resultDiv.innerHTML = `<div class="result-container"><div class="result-text"><span class="success">✅ Leave at <strong>${data.departureTime}</strong></span><div class="info">Travel time: ${data.travelTime}m + ${buffer}m buffer = ${data.travelTime + buffer}m total</div></div></div>`;
 
     startCountdown(data.departureTime);
     scheduleNotification(data.departureTime);
@@ -182,7 +197,7 @@ async function calculateDeparture() {
     console.error("API Error Details:", err.message, err.stack);
     console.error("Full Error:", err);
     const userMsg = err.message || 'Could not connect to API. Try checking if the page is still loading.';
-    resultDiv.innerHTML = `<span class="error">❌ ${userMsg}</span>`;
+    resultDiv.innerHTML = `<div class="result-container"><div class="result-text error">❌ ${userMsg}</div></div>`;
   }
 }
 
@@ -230,7 +245,7 @@ function startCountdown(departureTime) {
     const diff = target - now;
 
     if (diff <= 0) {
-      document.getElementById("countdown").innerHTML = '<span class="success">🚍 Time to leave!</span>';
+      document.getElementById("countdown").innerHTML = '<div class="countdown-timer">🚍 Time to leave!</div>';
       clearInterval(countdownInterval);
       return;
     }
@@ -238,7 +253,7 @@ function startCountdown(departureTime) {
     const mins = Math.floor(diff / 60000);
     const secs = Math.floor((diff % 60000) / 1000);
 
-    document.getElementById("countdown").innerText = `Leaving in ${mins}m ${secs}s`;
+    document.getElementById("countdown").innerHTML = `<div class="countdown-timer">⏳ ${mins}m ${secs}s left</div>`;
   }, 1000);
 }
 
