@@ -39,16 +39,50 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(168, 85, 247, 0.3) 0%, transparent 50%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  background-attachment: fixed;
   min-height: 100vh;
   padding: 20px;
   color: var(--text);
   transition: background 0.3s ease;
+  position: relative;
+  overflow-x: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="%23667eea" width="100" height="100" opacity="0.03"/><line x1="0" y1="0" x2="100" y2="100" stroke="%233b82f6" stroke-width="0.5" opacity="0.1"/><line x1="100" y1="0" x2="0" y2="100" stroke="%233b82f6" stroke-width="0.5" opacity="0.1"/></svg>');
+  pointer-events: none;
+  z-index: 1;
+  animation: drift 20s linear infinite;
+}
+
+@keyframes drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(100px, 100px); }
+}
+
+.container {
+  position: relative;
+  z-index: 2;
+}
+
+@media (prefers-color-scheme: light) {
   body {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(102, 126, 234, 0.2) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(118, 75, 162, 0.2) 0%, transparent 50%),
+      linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
   }
 }
 
