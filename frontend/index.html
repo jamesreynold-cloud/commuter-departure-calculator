@@ -83,6 +83,14 @@ function initDarkMode() {
 
 initDarkMode();
 
+// Set default arrival time to current time
+function setDefaultArrivalTime() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('arrivalTime').value = `${hours}:${minutes}`;
+}
+
 // Check and display notification status on page load
 function updateNotificationStatus() {
   const notifBtn = document.getElementById('notifBtn');
@@ -128,7 +136,10 @@ async function enableNotifications() {
 }
 
 // Update status on page load and when app comes to foreground
-window.addEventListener('load', updateNotificationStatus);
+window.addEventListener('load', () => {
+  setDefaultArrivalTime();
+  updateNotificationStatus();
+});
 window.addEventListener('focus', updateNotificationStatus);
 
 // Main calculation function with improved error handling
