@@ -125,7 +125,9 @@ header h2 {
 
 .subtitle {
   font-size: 0.95rem;
-  color: var(--muted);
+  color: #e0e7ff;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   margin-bottom: 24px;
 }
 
