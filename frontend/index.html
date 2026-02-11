@@ -22,13 +22,6 @@
   </header>
 
   <div class="card">
-    <div class="form-group realtime-toggle">
-      <label class="toggle-label">
-        <input type="checkbox" id="realtimeToggle" checked>
-        Real-time (R @ Elmhurst Av)
-      </label>
-    </div>
-
     <div id="realtimeSection" class="realtime-section">
       <div class="realtime-header">
         <h3>Real-time arrivals</h3>
@@ -56,6 +49,11 @@
       </div>
 
       <div class="form-group">
+        <label for="arrivalSelect"><span class="icon-label">🚆</span> Choose arrival</label>
+        <select id="arrivalSelect" aria-label="Arrival options"></select>
+      </div>
+
+      <div class="form-group">
         <label for="walkingMinutes"><span class="icon-label">🚶</span> Walking minutes</label>
         <input type="number" id="walkingMinutes" value="7" min="0" aria-label="Walking minutes">
       </div>
@@ -66,38 +64,10 @@
       </div>
 
       <div id="leaveByResult" class="leaveby-result" role="status" aria-live="polite"></div>
+      <div id="countdown"></div>
     </div>
-
-    <hr class="section-divider">
-
-    <div class="form-group">
-      <label for="route"><span class="icon-label">🛤️</span> Your Route</label>
-      <select id="route" aria-label="Route">
-        <option value="bus101">🚌 Bus 101 - Main St (Travel: 20m) | Runs: Every 15 min</option>
-        <option value="bus202">🚌 Bus 202 - Downtown (Travel: 35m) | Runs: Every 20 min</option>
-        <option value="trainA">🚊 Train A - Express (Travel: 25m) | Runs: Every 30 min</option>
-      </select>
-    </div>
-
-    <div class="form-group">
-      <label for="arrivalTime"><span class="icon-label">⏰</span> When Must You Arrive?</label>
-      <input type="time" id="arrivalTime" aria-required="true">
-    </div>
-
-    <div class="form-group">
-      <label for="buffer"><span class="icon-label">⏳</span> Extra Buffer (minutes)</label>
-      <input type="number" id="buffer" value="10" min="0" aria-label="Buffer minutes">
-    </div>
-
-    <div class="button-group">
-      <button class="btn-primary" onclick="calculateDeparture()">📍 Calculate Departure</button>
-    </div>
-
     <button id="notifBtn" class="btn-notif" onclick="enableNotifications()" style="display: none;">🔔 Enable Notifications</button>
     <div id="notifStatus" class="notification-status"></div>
-
-    <div id="result" role="status" aria-live="polite"></div>
-    <div id="countdown"></div>
   </div>
 </div>
 
@@ -170,23 +140,29 @@ function updateLeaveBy() {
   const arrivals = latestArrivals[direction] || [];
   const walking = Number(document.getElementById('walkingMinutes').value) || 0;
   const buffer = Number(document.getElementById('bufferMinutes').value) || 0;
+  const arrivalSelect = document.getElementById('arrivalSelect');
 
-  if (arrivals.length === 0) {
+  if (!arrivals.length) {
     resultEl.innerHTML = '<span class="warning">No upcoming arrivals for this direction.</span>';
+    document.getElementById('countdown').innerHTML = '';
     return;
   }
 
-  const nextArrival = arrivals[0];
-  const leaveByEpoch = (nextArrival.arrivalEpoch * 1000) - (walking + buffer) * 60000;
+  const selectedEpoch = Number(arrivalSelect.value);
+  const selectedArrival = arrivals.find(item => item.arrivalEpoch === selectedEpoch) || arrivals[0];
+  const leaveByEpoch = (selectedArrival.arrivalEpoch * 1000) - (walking + buffer) * 60000;
   const minutesUntilLeave = Math.round((leaveByEpoch - Date.now()) / 60000);
   const leaveByTime = formatTime(new Date(leaveByEpoch));
 
   if (minutesUntilLeave < 0) {
     resultEl.innerHTML = `<span class="warning">⚠️ You’re ${Math.abs(minutesUntilLeave)} min late. Leave now.</span>`;
+    document.getElementById('countdown').innerHTML = '';
     return;
   }
 
   resultEl.innerHTML = `Leave by <strong>${leaveByTime}</strong> · You have <strong>${minutesUntilLeave} min</strong>`;
+  startCountdown(leaveByEpoch);
+  scheduleNotification(leaveByEpoch);
 }
 
 async function fetchArrivals() {
@@ -203,6 +179,7 @@ async function fetchArrivals() {
 
     renderArrivals(data.northbound || [], 'northArrivals');
     renderArrivals(data.southbound || [], 'southArrivals');
+    updateArrivalOptions();
     status.textContent = `Updated: ${new Date(data.fetchedAtISO).toLocaleTimeString()}`;
     updateLeaveBy();
   } catch (err) {
@@ -215,30 +192,35 @@ async function fetchArrivals() {
   }
 }
 
-function initRealtimeUI() {
-  const toggle = document.getElementById('realtimeToggle');
-  const section = document.getElementById('realtimeSection');
-  const refreshBtn = document.getElementById('refreshArrivals');
+function updateArrivalOptions() {
+  const select = document.getElementById('arrivalSelect');
+  const direction = document.getElementById('directionSelect').value;
+  const arrivals = (latestArrivals && latestArrivals[direction]) || [];
 
-  const updateVisibility = () => {
-    section.style.display = toggle.checked ? 'block' : 'none';
-  };
+  if (!arrivals.length) {
+    select.innerHTML = '<option value="">No arrivals available</option>';
+    return;
+  }
 
-  toggle.addEventListener('change', updateVisibility);
-  updateVisibility();
+  select.innerHTML = arrivals.map((item, index) => {
+    const timeLabel = formatTime(new Date(item.arrivalEpoch * 1000));
+    return `<option value="${item.arrivalEpoch}">in ${item.minutesAway} min · ${timeLabel}</option>`;
+  }).join('');
 
-  refreshBtn.addEventListener('click', fetchArrivals);
-  document.getElementById('directionSelect').addEventListener('change', updateLeaveBy);
-  document.getElementById('walkingMinutes').addEventListener('input', updateLeaveBy);
-  document.getElementById('bufferMinutes').addEventListener('input', updateLeaveBy);
+  select.selectedIndex = 0;
 }
 
-// Set default arrival time to current time
-function setDefaultArrivalTime() {
-  const now = new Date();
-  const hours = String(now.getHours()).padStart(2, '0');
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  document.getElementById('arrivalTime').value = `${hours}:${minutes}`;
+function initRealtimeUI() {
+  const refreshBtn = document.getElementById('refreshArrivals');
+
+  refreshBtn.addEventListener('click', fetchArrivals);
+  document.getElementById('directionSelect').addEventListener('change', () => {
+    updateArrivalOptions();
+    updateLeaveBy();
+  });
+  document.getElementById('arrivalSelect').addEventListener('change', updateLeaveBy);
+  document.getElementById('walkingMinutes').addEventListener('input', updateLeaveBy);
+  document.getElementById('bufferMinutes').addEventListener('input', updateLeaveBy);
 }
 
 // Check and display notification status on page load
@@ -287,100 +269,33 @@ async function enableNotifications() {
 
 // Update status on page load and when app comes to foreground
 window.addEventListener('load', () => {
-  setDefaultArrivalTime();
   updateNotificationStatus();
   initRealtimeUI();
   fetchArrivals();
 });
 window.addEventListener('focus', updateNotificationStatus);
 
-// Main calculation function with improved error handling
-async function calculateDeparture() {
-  const route = document.getElementById("route").value;
-  const arrivalTime = document.getElementById("arrivalTime").value;
-  const buffer = parseInt(document.getElementById("buffer").value, 10);
-  const resultDiv = document.getElementById("result");
-
-  // Validate input
-  if (!arrivalTime) {
-    resultDiv.innerHTML = '<div class="result-container"><div class="result-text error">❌ Please enter an arrival time.</div></div>';
-    return;
-  }
-
-  if (isNaN(buffer) || buffer < 0) {
-    resultDiv.innerHTML = '<div class="result-container"><div class="result-text error">❌ Buffer must be a positive number.</div></div>';
-    return;
-  }
-
-  // Parse arrival time to check if it's valid
-  const [arrivalHours, arrivalMins] = arrivalTime.split(":").map(Number);
-  const arrivalToday = new Date();
-  arrivalToday.setHours(arrivalHours, arrivalMins, 0, 0);
-  
-  if (arrivalToday < new Date()) {
-    resultDiv.innerHTML = '<div class="result-container"><div class="result-text error">❌ Arrival time has already passed today. Please enter a future time.</div></div>';
-    return;
-  }
-
-  try {
-    resultDiv.innerHTML = '<div class="result-container"><div class="result-text info">⏳ Calculating...</div></div>';
-    
-    const response = await fetch("/api/calculate-departure", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ route, arrivalTime, buffer }),
-      credentials: "same-origin"
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API Error ${response.status}:`, errorText);
-      throw new Error(`Server error: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    if (data.error) {
-      resultDiv.innerHTML = `<div class="result-container"><div class="result-text error">❌ ${data.error}</div></div>`;
-      return;
-    }
-
-    resultDiv.innerHTML = `<div class="result-container"><div class="result-text"><span class="success">✅ Leave at <strong>${data.departureTime}</strong></span><div class="info">Travel time: ${data.travelTime}m + ${buffer}m buffer = ${data.travelTime + buffer}m total</div></div></div>`;
-
-    startCountdown(data.departureTime);
-    scheduleNotification(data.departureTime);
-
-  } catch (err) {
-    console.error("API Error Details:", err.message, err.stack);
-    console.error("Full Error:", err);
-    const userMsg = err.message || 'Could not connect to API. Try checking if the page is still loading.';
-    resultDiv.innerHTML = `<div class="result-container"><div class="result-text error">❌ ${userMsg}</div></div>`;
-  }
-}
-
-function scheduleNotification(departureTime) {
+let notificationTimeout;
+function scheduleNotification(leaveByEpochMs) {
   if (Notification.permission !== "granted") {
-    document.getElementById("result").innerHTML += '<div class="info" style="margin-top: 8px;">💡 Enable notifications to get an alert when it\'s time to leave.</div>';
     return;
   }
 
-  const now = new Date();
-  const [hours, minutes] = departureTime.split(":").map(Number);
+  if (notificationTimeout) {
+    clearTimeout(notificationTimeout);
+  }
 
-  const departureDate = new Date();
-  departureDate.setHours(hours, minutes, 0, 0);
-
-  // If departure time already passed today, stop
-  if (departureDate <= now) {
-    document.getElementById("result").innerHTML += '<div class="error" style="margin-top: 8px;">⚠️ Departure time has already passed.</div>';
+  const now = Date.now();
+  if (leaveByEpochMs <= now) {
     return;
   }
 
-  const delay = departureDate - now;
+  const delay = leaveByEpochMs - now;
+  const leaveByTime = formatTime(new Date(leaveByEpochMs));
 
-  setTimeout(() => {
+  notificationTimeout = setTimeout(() => {
     new Notification("⏰ Time to Leave!", {
-      body: `Leave now to arrive at ${departureTime}. Safe travels! 🚍`,
+      body: `Leave now to catch the ${leaveByTime} train.`,
       tag: "departure-time",
       requireInteraction: true
     });
@@ -388,18 +303,11 @@ function scheduleNotification(departureTime) {
 }
 
 let countdownInterval;
-
-function startCountdown(departureTime) {
+function startCountdown(leaveByEpochMs) {
   clearInterval(countdownInterval);
 
   countdownInterval = setInterval(() => {
-    const now = new Date();
-    const [h, m] = departureTime.split(":").map(Number);
-
-    const target = new Date();
-    target.setHours(h, m, 0, 0);
-
-    const diff = target - now;
+    const diff = leaveByEpochMs - Date.now();
 
     if (diff <= 0) {
       document.getElementById("countdown").innerHTML = '<div class="countdown-timer">🚍 Time to leave!</div>';
