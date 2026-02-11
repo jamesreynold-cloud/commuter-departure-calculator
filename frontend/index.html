@@ -31,11 +31,11 @@
 
       <div class="arrival-grid">
         <div class="arrival-col">
-          <h4>Northbound</h4>
+          <h4>Uptown / Manhattan</h4>
           <ul id="northArrivals" class="arrival-list"></ul>
         </div>
         <div class="arrival-col">
-          <h4>Southbound</h4>
+          <h4>Downtown / Brooklyn</h4>
           <ul id="southArrivals" class="arrival-list"></ul>
         </div>
       </div>
@@ -43,8 +43,8 @@
       <div class="form-group">
         <label for="directionSelect"><span class="icon-label">🧭</span> Direction for leave-by</label>
         <select id="directionSelect">
-          <option value="northbound" selected>Northbound</option>
-          <option value="southbound">Southbound</option>
+          <option value="northbound" selected>Uptown / Manhattan</option>
+          <option value="southbound">Downtown / Brooklyn</option>
         </select>
       </div>
 
@@ -116,10 +116,20 @@ function setRealtimeLoading(isLoading) {
   status.textContent = isLoading ? 'Loading real-time arrivals…' : '';
 }
 
+function getFilteredArrivals(direction) {
+  const arrivals = (latestArrivals && latestArrivals[direction]) || [];
+  const walking = Number(document.getElementById('walkingMinutes').value) || 0;
+  const buffer = Number(document.getElementById('bufferMinutes').value) || 0;
+  const minLead = walking + buffer;
+
+  const filtered = arrivals.filter(item => item.minutesAway >= minLead);
+  return filtered.slice(0, 2);
+}
+
 function renderArrivals(list, elementId) {
   const listEl = document.getElementById(elementId);
   if (!list || list.length === 0) {
-    listEl.innerHTML = '<li class="arrival-empty">No arrivals found</li>';
+    listEl.innerHTML = '<li class="arrival-empty">No arrivals far enough for your walk + buffer</li>';
     return;
   }
 
@@ -137,13 +147,13 @@ function updateLeaveBy() {
   }
 
   const direction = document.getElementById('directionSelect').value;
-  const arrivals = latestArrivals[direction] || [];
+  const arrivals = getFilteredArrivals(direction);
   const walking = Number(document.getElementById('walkingMinutes').value) || 0;
   const buffer = Number(document.getElementById('bufferMinutes').value) || 0;
   const arrivalSelect = document.getElementById('arrivalSelect');
 
   if (!arrivals.length) {
-    resultEl.innerHTML = '<span class="warning">No upcoming arrivals for this direction.</span>';
+    resultEl.innerHTML = '<span class="warning">No arrivals far enough for your walk + buffer.</span>';
     document.getElementById('countdown').innerHTML = '';
     return;
   }
@@ -177,8 +187,8 @@ async function fetchArrivals() {
     const data = await response.json();
     latestArrivals = data;
 
-    renderArrivals(data.northbound || [], 'northArrivals');
-    renderArrivals(data.southbound || [], 'southArrivals');
+    renderArrivals(getFilteredArrivals('northbound'), 'northArrivals');
+    renderArrivals(getFilteredArrivals('southbound'), 'southArrivals');
     updateArrivalOptions();
     status.textContent = `Updated: ${new Date(data.fetchedAtISO).toLocaleTimeString()}`;
     updateLeaveBy();
@@ -195,7 +205,7 @@ async function fetchArrivals() {
 function updateArrivalOptions() {
   const select = document.getElementById('arrivalSelect');
   const direction = document.getElementById('directionSelect').value;
-  const arrivals = (latestArrivals && latestArrivals[direction]) || [];
+  const arrivals = getFilteredArrivals(direction);
 
   if (!arrivals.length) {
     select.innerHTML = '<option value="">No arrivals available</option>';
@@ -210,17 +220,43 @@ function updateArrivalOptions() {
   select.selectedIndex = 0;
 }
 
+function maybeAutoRefresh() {
+  if (!latestArrivals) return fetchArrivals();
+  const arrivalSelect = document.getElementById('arrivalSelect');
+  const selectedEpoch = Number(arrivalSelect.value);
+
+  if (!selectedEpoch) {
+    fetchArrivals();
+    return;
+  }
+
+  const selectedMs = selectedEpoch * 1000;
+  if (selectedMs <= Date.now()) {
+    fetchArrivals();
+  }
+}
+
 function initRealtimeUI() {
   const refreshBtn = document.getElementById('refreshArrivals');
 
   refreshBtn.addEventListener('click', fetchArrivals);
   document.getElementById('directionSelect').addEventListener('change', () => {
+    setRealtimeLoading(false);
+    document.getElementById('realtimeStatus').textContent = '';
     updateArrivalOptions();
     updateLeaveBy();
   });
   document.getElementById('arrivalSelect').addEventListener('change', updateLeaveBy);
-  document.getElementById('walkingMinutes').addEventListener('input', updateLeaveBy);
-  document.getElementById('bufferMinutes').addEventListener('input', updateLeaveBy);
+  document.getElementById('walkingMinutes').addEventListener('input', () => {
+    setRealtimeLoading(false);
+    updateArrivalOptions();
+    updateLeaveBy();
+  });
+  document.getElementById('bufferMinutes').addEventListener('input', () => {
+    setRealtimeLoading(false);
+    updateArrivalOptions();
+    updateLeaveBy();
+  });
 }
 
 // Check and display notification status on page load
@@ -272,6 +308,7 @@ window.addEventListener('load', () => {
   updateNotificationStatus();
   initRealtimeUI();
   fetchArrivals();
+  setInterval(maybeAutoRefresh, 20000);
 });
 window.addEventListener('focus', updateNotificationStatus);
 
