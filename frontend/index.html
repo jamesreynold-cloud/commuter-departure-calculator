@@ -247,17 +247,23 @@ function initRealtimeUI() {
   document.getElementById('directionSelect').addEventListener('change', () => {
     setRealtimeLoading(false);
     document.getElementById('realtimeStatus').textContent = '';
+    resetCountdown();
     updateArrivalOptions();
     updateLeaveBy();
   });
-  document.getElementById('arrivalSelect').addEventListener('change', updateLeaveBy);
+  document.getElementById('arrivalSelect').addEventListener('change', () => {
+    resetCountdown();
+    updateLeaveBy();
+  });
   document.getElementById('walkingMinutes').addEventListener('input', () => {
     setRealtimeLoading(false);
+    resetCountdown();
     updateArrivalOptions();
     updateLeaveBy();
   });
   document.getElementById('bufferMinutes').addEventListener('input', () => {
     setRealtimeLoading(false);
+    resetCountdown();
     updateArrivalOptions();
     updateLeaveBy();
   });
