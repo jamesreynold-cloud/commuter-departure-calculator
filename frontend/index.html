@@ -141,6 +141,8 @@ function renderArrivals(list, elementId) {
 
 function updateLeaveBy() {
   const resultEl = document.getElementById('leaveByResult');
+  clearInterval(countdownInterval);
+  document.getElementById('countdown').innerHTML = '';
   if (!latestArrivals) {
     resultEl.textContent = '';
     return;
@@ -166,7 +168,6 @@ function updateLeaveBy() {
 
   if (minutesUntilLeave < 0) {
     resultEl.innerHTML = `<span class="warning">⚠️ You’re ${Math.abs(minutesUntilLeave)} min late. Leave now.</span>`;
-    document.getElementById('countdown').innerHTML = '';
     return;
   }
 
