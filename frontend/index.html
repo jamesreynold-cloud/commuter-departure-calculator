@@ -141,8 +141,10 @@ function renderArrivals(list, elementId) {
 
 function updateLeaveBy() {
   const resultEl = document.getElementById('leaveByResult');
-  clearInterval(countdownInterval);
-  document.getElementById('countdown').innerHTML = '';
+  resetCountdown();
+  if (notificationTimeout) {
+    clearTimeout(notificationTimeout);
+  }
   if (!latestArrivals) {
     resultEl.textContent = '';
     return;
@@ -342,6 +344,13 @@ function scheduleNotification(leaveByEpochMs) {
 }
 
 let countdownInterval;
+function resetCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+  }
+  document.getElementById('countdown').innerHTML = '';
+}
+
 function startCountdown(leaveByEpochMs) {
   clearInterval(countdownInterval);
 
