@@ -29,14 +29,15 @@
         <button id="refreshArrivals" class="btn-secondary" type="button">🔄 Refresh</button>
       </div>
       <div id="realtimeStatus" class="realtime-status" role="status" aria-live="polite"></div>
+      <div id="dateDisplay" class="date-display"></div>
 
       <div class="arrival-grid">
         <div class="arrival-col">
-          <h4>Uptown / Manhattan</h4>
+          <h4>Uptown / Forest Hills</h4>
           <ul id="northArrivals" class="arrival-list"></ul>
         </div>
         <div class="arrival-col">
-          <h4>Downtown / Brooklyn</h4>
+          <h4>Downtown / Manhattan</h4>
           <ul id="southArrivals" class="arrival-list"></ul>
         </div>
       </div>
@@ -44,8 +45,8 @@
       <div class="form-group">
         <label for="directionSelect"><span class="icon-label">🧭</span> Direction for leave-by</label>
         <select id="directionSelect">
-          <option value="northbound" selected>Uptown / Manhattan</option>
-          <option value="southbound">Downtown / Brooklyn</option>
+          <option value="northbound" selected>Uptown / Forest Hills</option>
+          <option value="southbound">Downtown / Manhattan</option>
         </select>
       </div>
 
@@ -185,6 +186,7 @@ function updateLeaveBy() {
 async function fetchArrivals() {
   setRealtimeLoading(true);
   const status = document.getElementById('realtimeStatus');
+  const dateDisplay = document.getElementById('dateDisplay');
 
   try {
     const response = await fetch('/api/mta-arrivals', { cache: 'no-store' });
@@ -197,7 +199,11 @@ async function fetchArrivals() {
     renderArrivals(getFilteredArrivals('northbound'), 'northArrivals');
     renderArrivals(getFilteredArrivals('southbound'), 'southArrivals');
     updateArrivalOptions();
-    status.textContent = `Updated: ${new Date(data.fetchedAtISO).toLocaleTimeString()}`;
+    
+    const fetchedDate = new Date(data.fetchedAtISO);
+    status.textContent = `Updated: ${fetchedDate.toLocaleTimeString()}`;
+    dateDisplay.textContent = `📅 ${fetchedDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`;
+    
     updateLeaveBy();
   } catch (err) {
     console.error('MTA fetch error:', err);
