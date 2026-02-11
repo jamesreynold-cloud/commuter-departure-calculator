@@ -22,6 +22,54 @@
   </header>
 
   <div class="card">
+    <div class="form-group realtime-toggle">
+      <label class="toggle-label">
+        <input type="checkbox" id="realtimeToggle" checked>
+        Real-time (R @ Elmhurst Av)
+      </label>
+    </div>
+
+    <div id="realtimeSection" class="realtime-section">
+      <div class="realtime-header">
+        <h3>Real-time arrivals</h3>
+        <button id="refreshArrivals" class="btn-secondary" type="button">🔄 Refresh</button>
+      </div>
+      <div id="realtimeStatus" class="realtime-status" role="status" aria-live="polite"></div>
+
+      <div class="arrival-grid">
+        <div class="arrival-col">
+          <h4>Northbound</h4>
+          <ul id="northArrivals" class="arrival-list"></ul>
+        </div>
+        <div class="arrival-col">
+          <h4>Southbound</h4>
+          <ul id="southArrivals" class="arrival-list"></ul>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="directionSelect"><span class="icon-label">🧭</span> Direction for leave-by</label>
+        <select id="directionSelect">
+          <option value="northbound" selected>Northbound</option>
+          <option value="southbound">Southbound</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="walkingMinutes"><span class="icon-label">🚶</span> Walking minutes</label>
+        <input type="number" id="walkingMinutes" value="7" min="0" aria-label="Walking minutes">
+      </div>
+
+      <div class="form-group">
+        <label for="bufferMinutes"><span class="icon-label">⏳</span> Extra buffer (minutes)</label>
+        <input type="number" id="bufferMinutes" value="3" min="0" aria-label="Buffer minutes">
+      </div>
+
+      <div id="leaveByResult" class="leaveby-result" role="status" aria-live="polite"></div>
+    </div>
+
+    <hr class="section-divider">
+
     <div class="form-group">
       <label for="route"><span class="icon-label">🛤️</span> Your Route</label>
       <select id="route" aria-label="Route">
@@ -82,6 +130,109 @@ function initDarkMode() {
 
 initDarkMode();
 
+// Real-time MTA arrivals (R @ Elmhurst Av)
+let latestArrivals = null;
+
+function formatTime(date) {
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
+function setRealtimeLoading(isLoading) {
+  const refreshBtn = document.getElementById('refreshArrivals');
+  const status = document.getElementById('realtimeStatus');
+  refreshBtn.disabled = isLoading;
+  status.textContent = isLoading ? 'Loading real-time arrivals…' : '';
+}
+
+function renderArrivals(list, elementId) {
+  const listEl = document.getElementById(elementId);
+  if (!list || list.length === 0) {
+    listEl.innerHTML = '<li class="arrival-empty">No arrivals found</li>';
+    return;
+  }
+
+  listEl.innerHTML = list.map(item => {
+    const arrivalTime = formatTime(new Date(item.arrivalEpoch * 1000));
+    return `<li><strong>${item.minutesAway} min</strong> · ${arrivalTime}</li>`;
+  }).join('');
+}
+
+function updateLeaveBy() {
+  const resultEl = document.getElementById('leaveByResult');
+  if (!latestArrivals) {
+    resultEl.textContent = '';
+    return;
+  }
+
+  const direction = document.getElementById('directionSelect').value;
+  const arrivals = latestArrivals[direction] || [];
+  const walking = Number(document.getElementById('walkingMinutes').value) || 0;
+  const buffer = Number(document.getElementById('bufferMinutes').value) || 0;
+
+  if (arrivals.length === 0) {
+    resultEl.innerHTML = '<span class="warning">No upcoming arrivals for this direction.</span>';
+    return;
+  }
+
+  const nextArrival = arrivals[0];
+  const leaveByEpoch = (nextArrival.arrivalEpoch * 1000) - (walking + buffer) * 60000;
+  const minutesUntilLeave = Math.round((leaveByEpoch - Date.now()) / 60000);
+  const leaveByTime = formatTime(new Date(leaveByEpoch));
+
+  if (minutesUntilLeave < 0) {
+    resultEl.innerHTML = `<span class="warning">⚠️ You’re ${Math.abs(minutesUntilLeave)} min late. Leave now.</span>`;
+    return;
+  }
+
+  resultEl.innerHTML = `Leave by <strong>${leaveByTime}</strong> · You have <strong>${minutesUntilLeave} min</strong>`;
+}
+
+async function fetchArrivals() {
+  setRealtimeLoading(true);
+  const status = document.getElementById('realtimeStatus');
+
+  try {
+    const response = await fetch('/api/mta-arrivals', { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+    const data = await response.json();
+    latestArrivals = data;
+
+    renderArrivals(data.northbound || [], 'northArrivals');
+    renderArrivals(data.southbound || [], 'southArrivals');
+    status.textContent = `Updated: ${new Date(data.fetchedAtISO).toLocaleTimeString()}`;
+    updateLeaveBy();
+  } catch (err) {
+    console.error('MTA fetch error:', err);
+    status.textContent = 'Could not load real-time arrivals.';
+    document.getElementById('northArrivals').innerHTML = '';
+    document.getElementById('southArrivals').innerHTML = '';
+  } finally {
+    setRealtimeLoading(false);
+  }
+}
+
+function initRealtimeUI() {
+  const toggle = document.getElementById('realtimeToggle');
+  const section = document.getElementById('realtimeSection');
+  const refreshBtn = document.getElementById('refreshArrivals');
+
+  const updateVisibility = () => {
+    section.style.display = toggle.checked ? 'block' : 'none';
+  };
+
+  toggle.addEventListener('change', updateVisibility);
+  updateVisibility();
+
+  refreshBtn.addEventListener('click', fetchArrivals);
+  document.getElementById('directionSelect').addEventListener('change', updateLeaveBy);
+  document.getElementById('walkingMinutes').addEventListener('input', updateLeaveBy);
+  document.getElementById('bufferMinutes').addEventListener('input', updateLeaveBy);
+}
+
 // Set default arrival time to current time
 function setDefaultArrivalTime() {
   const now = new Date();
@@ -138,6 +289,8 @@ async function enableNotifications() {
 window.addEventListener('load', () => {
   setDefaultArrivalTime();
   updateNotificationStatus();
+  initRealtimeUI();
+  fetchArrivals();
 });
 window.addEventListener('focus', updateNotificationStatus);
 

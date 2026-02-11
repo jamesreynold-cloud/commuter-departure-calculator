@@ -150,6 +150,99 @@ header h2 {
   margin-bottom: 20px;
 }
 
+.realtime-toggle {
+  margin-bottom: 12px;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.toggle-label input {
+  width: 18px;
+  height: 18px;
+}
+
+.realtime-section {
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 16px;
+}
+
+.realtime-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.realtime-header h3 {
+  font-size: 1.1rem;
+}
+
+.realtime-status {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.arrival-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.arrival-col h4 {
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.arrival-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.arrival-list li {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.95rem;
+}
+
+.arrival-empty {
+  color: var(--muted);
+}
+
+.leaveby-result {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  font-weight: 600;
+}
+
+.leaveby-result .warning {
+  color: #fbbf24;
+}
+
+.section-divider {
+  border: none;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 16px 0;
+}
+
 label {
   display: block;
   font-size: 0.95rem;
@@ -200,6 +293,12 @@ input[type="number"]:focus {
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 24px;
+}
+
+@media (max-width: 600px) {
+  .arrival-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 button {

@@ -15,6 +15,10 @@ Quick local run
    - `cd backend && npm install && node server.js` (API runs at http://localhost:3001)
 2. Open `frontend/index.html` in your browser and use the app (when using the local backend, change the fetch URL to `http://localhost:3001/calculate-departure`).
 
+Environment
+- Create a `.env.local` file with:
+  - `ELMHURST_PARENT_STOP_ID=____`
+
 Deploy to Vercel (recommended)
 1. Go to https://vercel.com, log in, and import the repository `jamesreynold-cloud/commuter-departure-calculator`.
 2. Vercel will detect `api/` serverless functions and `frontend/` static files using `vercel.json`.
