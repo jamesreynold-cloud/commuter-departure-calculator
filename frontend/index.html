@@ -122,7 +122,10 @@ function getFilteredArrivals(direction) {
   const buffer = Number(document.getElementById('bufferMinutes').value) || 0;
   const minLead = walking + buffer;
 
+  console.log(`[getFilteredArrivals] direction=${direction}, raw arrivals=${arrivals.length}, minLead=${minLead}`);
+
   const filtered = arrivals.filter(item => item.minutesAway >= minLead);
+  console.log(`[getFilteredArrivals] filtered arrivals=${filtered.length}`);
   return filtered.slice(0, 2);
 }
 
@@ -210,8 +213,11 @@ function updateArrivalOptions() {
   const direction = document.getElementById('directionSelect').value;
   const arrivals = getFilteredArrivals(direction);
 
+  console.log(`[updateArrivalOptions] direction=${direction}, arrivals count=${arrivals.length}`);
+
   if (!arrivals.length) {
     select.innerHTML = '<option value="">No arrivals available</option>';
+    select.selectedIndex = 0;
     return;
   }
 
