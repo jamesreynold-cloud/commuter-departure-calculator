@@ -231,7 +231,8 @@ function maybeAutoRefresh() {
   }
 
   const selectedMs = selectedEpoch * 1000;
-  if (selectedMs <= Date.now()) {
+  const minutesAway = Math.round((selectedMs - Date.now()) / 60000);
+  if (minutesAway <= 0) {
     fetchArrivals();
   }
 }
