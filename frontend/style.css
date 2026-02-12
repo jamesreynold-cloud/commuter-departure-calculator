@@ -147,7 +147,7 @@ header h2 {
 .card {
   background: var(--card);
   border-radius: 20px;
-  padding: 30px;
+  padding: 22px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -160,7 +160,7 @@ header h2 {
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .realtime-toggle {
@@ -180,11 +180,11 @@ header h2 {
 }
 
 .realtime-section {
-  padding: 16px;
+  padding: 12px;
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .realtime-header {
@@ -192,7 +192,7 @@ header h2 {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .realtime-header h3 {
@@ -202,26 +202,26 @@ header h2 {
 .realtime-status {
   font-size: 0.9rem;
   color: var(--muted);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .date-display {
   font-size: 0.85rem;
   color: var(--muted);
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   font-weight: 500;
 }
 
 .arrival-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .arrival-col h4 {
   font-size: 0.95rem;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .arrival-list {
@@ -229,11 +229,11 @@ header h2 {
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .arrival-list li {
-  padding: 8px 10px;
+  padding: 6px 8px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -245,7 +245,7 @@ header h2 {
 }
 
 .leaveby-result {
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 10px;
   background: rgba(16, 185, 129, 0.15);
   border: 1px solid rgba(16, 185, 129, 0.4);
@@ -260,7 +260,7 @@ header h2 {
   border: none;
   height: 1px;
   background: rgba(255, 255, 255, 0.15);
-  margin: 16px 0;
+  margin: 12px 0;
 }
 
 label {
@@ -268,7 +268,7 @@ label {
   font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -461,7 +461,7 @@ button:active {
   }
 
   .card {
-    padding: 20px;
+    padding: 16px;
   }
 
   .button-group {
