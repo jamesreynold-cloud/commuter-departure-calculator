@@ -42,27 +42,31 @@
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="directionSelect"><span class="icon-label">🧭</span> Direction for leave-by</label>
-        <select id="directionSelect">
-          <option value="northbound" selected>Uptown / Forest Hills</option>
-          <option value="southbound">Downtown / Manhattan</option>
-        </select>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="directionSelect"><span class="icon-label">🧭</span> Direction for leave-by</label>
+          <select id="directionSelect">
+            <option value="northbound" selected>Uptown / Forest Hills</option>
+            <option value="southbound">Downtown / Manhattan</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="arrivalSelect"><span class="icon-label">🚆</span> Choose arrival</label>
+          <select id="arrivalSelect" aria-label="Arrival options"></select>
+        </div>
       </div>
 
-      <div class="form-group">
-        <label for="arrivalSelect"><span class="icon-label">🚆</span> Choose arrival</label>
-        <select id="arrivalSelect" aria-label="Arrival options"></select>
-      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="walkingMinutes"><span class="icon-label">🚶</span> Walking minutes</label>
+          <input type="number" id="walkingMinutes" value="7" min="0" aria-label="Walking minutes">
+        </div>
 
-      <div class="form-group">
-        <label for="walkingMinutes"><span class="icon-label">🚶</span> Walking minutes</label>
-        <input type="number" id="walkingMinutes" value="7" min="0" aria-label="Walking minutes">
-      </div>
-
-      <div class="form-group">
-        <label for="bufferMinutes"><span class="icon-label">⏳</span> Extra buffer (minutes)</label>
-        <input type="number" id="bufferMinutes" value="3" min="0" aria-label="Buffer minutes">
+        <div class="form-group">
+          <label for="bufferMinutes"><span class="icon-label">⏳</span> Extra buffer (minutes)</label>
+          <input type="number" id="bufferMinutes" value="3" min="0" aria-label="Buffer minutes">
+        </div>
       </div>
 
       <div id="leaveByResult" class="leaveby-result" role="status" aria-live="polite"></div>
