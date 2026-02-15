@@ -1,7 +1,7 @@
 // Service Worker for Commuter Departure Time Calculator PWA
-const CACHE_NAME = 'commuter-calc-v3';
-const STATIC_CACHE = 'commuter-static-v3';
-const API_CACHE = 'commuter-api-v3';
+const CACHE_NAME = 'commuter-calc-v4';
+const STATIC_CACHE = 'commuter-static-v4';
+const API_CACHE = 'commuter-api-v4';
 
 const urlsToCache = [
   '/',

@@ -94,6 +94,23 @@
 let audioContext = null;
 let alarmInterval = null;
 let audioInitialized = false;
+let speechRepeatCount = 0;
+
+// Detect if user is on desktop (not mobile/tablet)
+function isDesktop() {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isMobile = /iphone|ipad|ipod|android|webos|blackberry|windows phone/i.test(userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+  
+  // If it's in standalone mode (installed PWA), treat as mobile
+  if (isStandalone) return false;
+  
+  // If user agent indicates mobile, not desktop
+  if (isMobile) return false;
+  
+  // Otherwise, treat as desktop
+  return true;
+}
 
 // Initialize audio on first user interaction
 function initAudio() {
@@ -137,10 +154,48 @@ function playBeep() {
   }
 }
 
-function playAlarm() {
-  stopAlarm();
+function playVoiceAlarm() {
+  // Use Web Speech API for text-to-speech
+  if (!('speechSynthesis' in window)) {
+    console.warn('Speech synthesis not supported, falling back to beeps');
+    playBeepAlarm();
+    return;
+  }
   
-  console.log('🔊 Playing alarm for 10 seconds');
+  speechRepeatCount = 0;
+  
+  function speakMessage() {
+    if (speechRepeatCount >= 5) {
+      console.log('🔇 Voice alarm completed (5 times)');
+      return;
+    }
+    
+    const utterance = new SpeechSynthesisUtterance('You need to go now');
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    
+    utterance.onend = () => {
+      speechRepeatCount++;
+      if (speechRepeatCount < 5) {
+        // Small delay between repetitions
+        setTimeout(speakMessage, 500);
+      }
+    };
+    
+    utterance.onerror = (e) => {
+      console.warn('Speech error:', e);
+    };
+    
+    window.speechSynthesis.speak(utterance);
+  }
+  
+  console.log('🔊 Playing voice alarm (5 times): "You need to go now"');
+  speakMessage();
+}
+
+function playBeepAlarm() {
+  console.log('🔊 Playing beep alarm for 10 seconds');
   
   // Play beep immediately
   playBeep();
@@ -159,12 +214,30 @@ function playAlarm() {
   }, 600);
 }
 
+function playAlarm() {
+  stopAlarm();
+  
+  // Desktop: voice alarm, Mobile/PWA: beep alarm
+  if (isDesktop()) {
+    playVoiceAlarm();
+  } else {
+    playBeepAlarm();
+  }
+}
+
 function stopAlarm() {
+  // Stop beep alarm
   if (alarmInterval) {
     clearInterval(alarmInterval);
     alarmInterval = null;
-    console.log('🔇 Alarm stopped');
   }
+  
+  // Stop voice alarm
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+  
+  speechRepeatCount = 0;
 }
 
 // Real-time MTA arrivals (R @ Elmhurst Av)
