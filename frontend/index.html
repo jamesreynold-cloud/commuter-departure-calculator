@@ -5,15 +5,26 @@
   <title>Commuter Departure App</title>
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23007BFF' width='180' height='180' rx='40'/><text x='50%' y='50%' font-size='80' font-weight='bold' fill='white' text-anchor='middle' dominant-baseline='central'>🚍</text></svg>">
+  
+  <!-- PWA Icons -->
+  <link rel="icon" type="image/svg+xml" sizes="192x192" href="icons/icon-192.svg">
+  <link rel="icon" type="image/svg+xml" sizes="512x512" href="icons/icon-512.svg">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.svg">
+  
+  <!-- PWA Meta Tags -->
   <meta name="description" content="Small app to calculate what time you should leave to arrive on time">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#007BFF">
+  
+  <!-- Android PWA -->
   <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- iOS PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Commuter Calc">
 </head>
 <body>
-
-<button class="dark-toggle" id="themeToggle" title="Toggle dark mode">🌙</button>
 
 <div class="container">
   <header>
@@ -79,32 +90,82 @@
 
 <script>
 
-// Dark mode toggle with localStorage persistence
-function initDarkMode() {
-  const toggle = document.getElementById('themeToggle');
-  const savedTheme = localStorage.getItem('theme') || 'auto';
-  
-  function applyTheme(theme) {
-    if (theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-      document.documentElement.style.colorScheme = 'dark';
-      toggle.textContent = '☀️';
-    } else {
-      document.documentElement.style.colorScheme = 'light';
-      toggle.textContent = '🌙';
-    }
-    localStorage.setItem('theme', theme === 'auto' ? 'auto' : theme);
+// Create alarm audio for notifications
+let audioContext = null;
+let alarmInterval = null;
+let audioInitialized = false;
+
+// Initialize audio on first user interaction
+function initAudio() {
+  if (audioInitialized) return;
+  try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    audioInitialized = true;
+    console.log('✅ Audio initialized');
+  } catch (e) {
+    console.warn('Could not initialize audio:', e);
   }
-  
-  toggle.addEventListener('click', () => {
-    const current = localStorage.getItem('theme') || 'auto';
-    const next = current === 'auto' ? 'light' : (current === 'light' ? 'dark' : 'auto');
-    applyTheme(next);
-  });
-  
-  applyTheme(savedTheme);
 }
 
-initDarkMode();
+// Initialize audio on any user interaction
+document.addEventListener('click', initAudio, { once: true });
+document.addEventListener('touchstart', initAudio, { once: true });
+
+function playBeep() {
+  if (!audioContext) {
+    initAudio();
+    if (!audioContext) return;
+  }
+  
+  try {
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.value = 880; // A5 note
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.3);
+  } catch (e) {
+    console.warn('Beep error:', e);
+  }
+}
+
+function playAlarm() {
+  stopAlarm();
+  
+  console.log('🔊 Playing alarm for 10 seconds');
+  
+  // Play beep immediately
+  playBeep();
+  
+  // Then beep every 0.6 seconds for 10 seconds
+  let count = 0;
+  const maxBeeps = 16; // ~10 seconds (16 * 0.6s)
+  
+  alarmInterval = setInterval(() => {
+    count++;
+    if (count >= maxBeeps) {
+      stopAlarm();
+      return;
+    }
+    playBeep();
+  }, 600);
+}
+
+function stopAlarm() {
+  if (alarmInterval) {
+    clearInterval(alarmInterval);
+    alarmInterval = null;
+    console.log('🔇 Alarm stopped');
+  }
+}
 
 // Real-time MTA arrivals (R @ Elmhurst Av)
 let latestArrivals = null;
@@ -363,6 +424,8 @@ function scheduleNotification(leaveByEpochMs) {
       tag: "departure-time",
       requireInteraction: true
     });
+    // Play alarm sound for 10 seconds
+    playAlarm();
   }, delay);
 }
 
